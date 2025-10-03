@@ -1,7 +1,4 @@
 {
-  "builds": [
-    { "src": "package.json", "use": "@vercel/astro" }
-  ],
   "routes": [
     { "src": "/(.*)", "dest": "/$1" }
   ]
