@@ -1,19 +1,8 @@
 {
   "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/astro",
-      "config": {
-        "maxLambdaSize": "15mb"
-      }
-    }
+    { "src": "package.json", "use": "@vercel/astro" }
   ],
-  "env": {
-    "NODE_OPTIONS": "--max_old_space_size=4096"
-  },
-  "build": {
-    "env": {
-      "NODE_ENV": "production"
-    }
-  }
+  "routes": [
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
 }
