@@ -1,0 +1,74 @@
+---
+import { SiC, SiHtml5, SiNodedotjs, SiExpress, SiReact, SiMongodb, SiPython, SiGit, SiCisco, SiAstro } from "react-icons/si";
+import { CgMicrosoft } from "react-icons/cg";
+import { FaDatabase } from "react-icons/fa";
+
+const stackItems = [
+  { name: 'C', color: 'from-blue-500 to-cyan-400', icon: SiC },
+  { name: 'HTML/CSS/JS', color: 'from-orange-500 to-yellow-400', icon: SiHtml5 },
+  { name: 'Node.js', color: 'from-green-500 to-emerald-400', icon: SiNodedotjs },
+  { name: 'Express', color: 'from-gray-500 to-slate-400', icon: SiExpress },
+  { name: 'React', color: 'from-cyan-500 to-blue-400', icon: SiReact },
+  { name: 'Astro', color: 'from-purple-500 to-pink-500', icon: SiAstro },
+  { name: 'MongoDB', color: 'from-green-600 to-lime-500', icon: SiMongodb },
+  { name: 'SQL Server', color: 'from-blue-600 to-indigo-500', icon: FaDatabase },
+  { name: 'Python', color: 'from-yellow-500 to-amber-400', icon: SiPython },
+  { name: 'Git', color: 'from-red-500 to-orange-400', icon: SiGit },
+  { name: 'Packet Tracer', color: 'from-red-600 to-rose-500', icon: SiCisco },
+  { name: 'MS Office', color: 'from-blue-500 to-purple-500', icon: CgMicrosoft },
+];
+---
+
+<section id="stack" class="py-20 relative">
+  <div class="container mx-auto px-6">
+    <h2 class="text-4xl md:text-5xl font-bold font-space gradient-text text-center mb-12">
+      Stack Tecnológico
+    </h2>
+    
+    <div class="max-w-6xl mx-auto">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {stackItems.map((item, index) => (
+          <div 
+            class={`tech-tag group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br ${item.color} hover-lift transition-all duration-300 cursor-pointer`}
+            style={`animation-delay: ${index * 0.1}s`}
+          >
+            <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-all duration-300"></div>
+            
+            <div class="relative z-10 text-center">
+              <div class="text-5xl mb-3 group-hover:scale-110 transition-transform duration-300 flex justify-center">
+                <item.icon />
+              </div>
+              <h3 class="text-white font-bold text-lg">
+                {item.name}
+              </h3>
+            </div>
+            
+            {/* Glow effect on hover */}
+            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div class="absolute inset-0 bg-gradient-to-r from-neon-cyan to-neon-purple blur-xl opacity-30"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+    
+    <div class="text-center mt-12">
+      <p class="text-gray-400 text-lg">
+        💡 <span class="text-neon-cyan font-semibold">Tech Stack</span> en constante evolución y aprendizaje
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  @import '../styles/global.css';
+  
+  .tech-tag {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .tech-tag:hover {
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 20px 40px rgba(0, 255, 255, 0.3);
+  }
+</style>

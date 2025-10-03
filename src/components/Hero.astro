@@ -1,0 +1,54 @@
+---
+import SpaceBackground from './SpaceBackground.tsx';
+---
+
+<section class="min-h-screen flex items-center justify-center relative overflow-hidden">
+  <SpaceBackground client:load />
+  
+  <div class="container mx-auto px-6 text-center relative z-10">
+    <div class="animate-float">
+      <h1 class="text-6xl md:text-8xl font-bold font-space gradient-text mb-6 pb-3 animate-glow">
+        Gianluca Ferreyra
+      </h1>
+      
+      <h2 class="text-2xl md:text-3xl font-semibold text-neon-cyan mb-4 mt-3">
+        Estudiante de Ingeniería en Informática – UNLaM
+      </h2>
+      
+      <p class="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+        Apasionado por el desarrollo de software y la innovación tecnológica. 
+        Construyendo el futuro, un código a la vez.
+      </p>
+      
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <a 
+          href="/cv.pdf" 
+          download
+          class="px-8 py-3 border-2 border-neon-cyan text-neon-cyan font-semibold rounded-full hover:bg-neon-cyan hover:text-black transition-all duration-300"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          📄 Descargar CV
+        </a>
+        
+        <a 
+          href="#contact" 
+          class="px-8 py-3 border-2 border-neon-cyan text-neon-cyan font-semibold rounded-full hover:bg-neon-cyan hover:text-black transition-all duration-300"
+        >
+          📧 Contactar
+        </a>
+      </div>
+    </div>
+    
+    <!-- Scroll indicator -->
+    <div class="absolute left-1/2 transform -translate-x-1/2 animate-bounce">
+      <div class="w-6 h-10 border-2 border-neon-cyan rounded-full flex justify-center">
+        <div class="w-1 h-3 bg-neon-cyan rounded-full mt-2 animate-pulse"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  @import '../styles/global.css';
+</style>

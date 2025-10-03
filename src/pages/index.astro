@@ -1,0 +1,35 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Hero from '../components/Hero.astro';
+import About from '../components/About.astro';
+import Stack from '../components/Stack.astro';
+import Projects from '../components/Projects.tsx';
+import Contact from '../components/Contact.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="Inicio">
+  <Hero />
+  
+  <section id="projects" class="py-20 relative">
+    <div class="container mx-auto px-6">
+      <h2 class="text-4xl md:text-5xl font-bold py-6 font-space gradient-text text-center mb-12">
+        Proyectos
+      </h2>
+      <p class="text-center text-gray-400 max-w-2xl mx-auto">
+        Explora mis proyectos como planetas en este sistema solar digital. 
+        Cada proyecto representa un mundo de conocimiento y experiencia.
+      </p>
+      <Projects client:load />
+    </div>
+  </section>
+  
+  <About />
+  <Stack />
+  <Contact />
+  <Footer />
+</Layout>
+
+<style>
+  @import '../styles/global.css';
+</style>

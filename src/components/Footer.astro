@@ -1,0 +1,114 @@
+---
+---
+<footer class="py-12 border-t border-neon-cyan/20 flex flex-col md:flex-row justify-between items-center gap-6">
+      <!-- Copyright -->
+      <div class="text-center md:text-left mx-10">
+        <p class="text-gray-400">
+          © 2025 <span class="gradient-text font-semibold">Gianluca Ferreyra</span>. 
+          
+        </p>
+        <p class="text-gray-400">
+          Todos los derechos reservados.
+        </p>
+        <p class="text-gray-500 text-sm mt-1">
+          Desarrollado con <span class="text-red-500">❤️</span> y mucho código
+        </p>
+      </div>
+
+      <!-- Back to Top Button (fixed bottom center) -->
+      <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 mb-5">
+        <button 
+          id="back-to-top"
+          type="button"
+          aria-label="Volver arriba"
+          class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-neon-cyan to-neon-purple text-black font-semibold rounded-full hover-lift transition-all duration-200 shadow-lg shadow-neon-cyan/30"
+        >
+          <span>🔝</span>
+          Volver arriba
+        </button>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="flex flex-wrap justify-center gap-6 w-auto mx-10">
+        <a href="#about" class="text-gray-400 hover:text-neon-cyan transition-colors duration-300">
+          Sobre Mí
+        </a>
+        <a href="#stack" class="text-gray-400 hover:text-neon-cyan transition-colors duration-300">
+          Stack
+        </a>
+        <a href="#projects" class="text-gray-400 hover:text-neon-cyan transition-colors duration-300">
+          Proyectos
+        </a>
+        <a href="#contact" class="text-gray-400 hover:text-neon-cyan transition-colors duration-300">
+          Contacto
+        </a>
+      </div>
+</footer>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const backToTopButton = document.getElementById('back-to-top');
+
+    if (backToTopButton) {
+      backToTopButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      const toggleVisibility = () => {
+        const scrollPosition = window.scrollY + window.innerHeight; // lo que se ve
+        const pageHeight = document.documentElement.scrollHeight;   // alto total
+
+        if (scrollPosition >= pageHeight - 70) { // ajusta el umbral si querés
+          backToTopButton.style.opacity = '1';
+          backToTopButton.style.visibility = 'visible';
+          backToTopButton.style.pointerEvents = 'auto';
+        } else {
+          backToTopButton.style.opacity = '0';
+          backToTopButton.style.visibility = 'hidden';
+          backToTopButton.style.pointerEvents = 'none';
+        }
+      };
+
+      // Inicializa y añade el listener
+      toggleVisibility();
+      window.addEventListener('scroll', toggleVisibility);
+    }
+
+    // Manejo seguro del theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeToggleThumb = document.getElementById('theme-toggle-thumb');
+    let isDarkTheme = document.body.classList.contains('dark-theme');
+
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        isDarkTheme = !isDarkTheme;
+        if (themeToggleThumb) {
+          themeToggleThumb.style.transform = isDarkTheme ? 'translateX(0)' : 'translateX(28px)';
+        }
+        document.body.classList.toggle('dark-theme', isDarkTheme);
+        document.body.classList.toggle('light-theme', !isDarkTheme);
+      });
+    }
+  });
+</script>
+
+<style>
+  @import '../styles/global.css';
+  
+  #back-to-top {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  #back-to-top:focus {
+    outline: 2px solid rgba(0,0,0,0.12);
+    outline-offset: 2px;
+  }
+
+  #theme-toggle-thumb {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+</style>
