@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { gsap } from 'gsap'; // Para animaciones suaves (zoom)
 
 interface Project {
   id: string;
@@ -10,7 +11,8 @@ interface Project {
   color: string;
   size: number;
   orbitRadius: number;
-  orbitSpeed: number;
+  icon: string; // Icono de tecnología
+  iconColor: string; // Color del icono
 }
 
 const projects: Project[] = [
@@ -23,7 +25,8 @@ const projects: Project[] = [
     color: '#00ffff',
     size: 3,
     orbitRadius: 20,
-    orbitSpeed: 0.002
+    icon: '⚛️', // React icon
+    iconColor: '#61DAFB'
   },
   {
     id: 'buscaminas-c',
@@ -34,7 +37,8 @@ const projects: Project[] = [
     color: '#ff00ff',
     size: 2.5,
     orbitRadius: 35,
-    orbitSpeed: 0.001
+    icon: '💻', // Terminal/CLI icon
+    iconColor: '#A8B9CC'
   },
   {
     id: 'landing-page',
@@ -45,51 +49,79 @@ const projects: Project[] = [
     color: '#8a2be2',
     size: 2,
     orbitRadius: 42,
-    orbitSpeed: 0.001
+    icon: '🌐', // Web icon
+    iconColor: '#FF6B35'
   }
 ];
 
-interface PlanetState {
-  group: THREE.Group;
-  project: Project;
-  angle: number;
-  targetSpeed: number; // velocidad deseada
-  currentSpeed: number; // velocidad actual para suavizar
-}
+// Función para crear canvas con icono que se vera dentro del planeta
+const createIconCanvas = (icon: string, color: string, size: number = 128) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  
+  // Fondo circular semi-transparente
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  ctx.beginPath();
+  ctx.arc(size/2, size/2, size/2 - 4, 0, 2 * Math.PI);
+  ctx.fill();
+  
+  // Icono
+  ctx.font = `${size * 0.5}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(icon, size/2, size/2);
+  
+  return canvas;
+};
 
 const Projects: React.FC = () => {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const planetsRef = useRef<PlanetState[]>([]);
   const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
   const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2());
   const [hoveredProject, setHoveredProject] = useState<string | null>(null);
+  const [zoomedProject, setZoomedProject] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     if (!mountRef.current) return;
 
+    // Función para calcular dimensiones responsivas
+    const updateDimensions = () => {
+      const width = window.innerWidth;
+      const height = window.innerWidth < 768 ? 400 : 600;
+      setDimensions({ width, height });
+      return { width, height };
+    };
+
+    const { width, height } = updateDimensions();
+
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / 600, 20, 1000);
+    const camera = new THREE.PerspectiveCamera(65, width / height, 1, 1000);
     camera.position.set(0, 20, 60);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, 600);
+    renderer.setSize(width, height);
     renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     mountRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
     // Lights
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+    const ambientLight = new THREE.AmbientLight(0x404040, 1);
     scene.add(ambientLight);
-    const pointLight = new THREE.PointLight(0xffffff, 1, 100);
-    pointLight.position.set(10, 10, 10);
+    const pointLight = new THREE.PointLight(0xffffff, 1, 200);
+    pointLight.position.set(10, 20, 30);
     scene.add(pointLight);
 
     // Sun
@@ -102,41 +134,71 @@ const Projects: React.FC = () => {
     const sun = new THREE.Mesh(sunGeometry, sunMaterial);
     scene.add(sun);
 
-    // Create planets
+    // Crear planetas estáticos con sprites mejorados DENTRO del planeta
+    const planetMeshes: THREE.Mesh[] = [];
+
     projects.forEach((project, index) => {
-      const planetGroup = new THREE.Group();
-      const planetGeometry = new THREE.SphereGeometry(project.size, 32, 32);
+      const mobileScale = width < 768 ? 0.7 : 1;
+      const scaledSize = project.size * mobileScale;
+      const scaledOrbitRadius = project.orbitRadius * mobileScale;
+
+      const planetGeometry = new THREE.SphereGeometry(scaledSize, 32, 32);
       const planetMaterial = new THREE.MeshPhongMaterial({
         color: project.color,
         emissive: project.color,
-        emissiveIntensity: 0.2,
+        emissiveIntensity: 0.3,
         shininess: 80
       });
       const planet = new THREE.Mesh(planetGeometry, planetMaterial);
       planet.userData = { projectId: project.id };
-      planetGroup.add(planet);
 
-      // Orbit ring
-      const orbitGeometry = new THREE.RingGeometry(project.orbitRadius - 0.05, project.orbitRadius + 0.05, 64);
-      const orbitMaterial = new THREE.MeshBasicMaterial({ color: project.color, side: THREE.DoubleSide, transparent: true, opacity: 0.2 });
+      const angle = (index * 2 * Math.PI) / projects.length;
+      planet.position.set(
+        Math.cos(angle) * scaledOrbitRadius,
+        0,
+        Math.sin(angle) * scaledOrbitRadius
+      );
+
+      planetMeshes.push(planet);
+      scene.add(planet);
+
+      // Crear sprite con icono que se vera como una especie de "ventana" en el planeta
+      const iconCanvas = createIconCanvas(project.icon, project.iconColor, 128);
+      const iconTexture = new THREE.CanvasTexture(iconCanvas);
+      
+      // Crear material del sprite con la textura del icono
+      const spriteMaterial = new THREE.SpriteMaterial({ 
+        map: iconTexture,
+        transparent: true,
+        alphaTest: 0.1
+      });
+      
+      const sprite = new THREE.Sprite(spriteMaterial);
+      
+      // Ajustar tamaño del sprite para que sea una "ventana" en el planeta
+      const spriteSize = scaledSize * 1.2;
+      sprite.scale.set(spriteSize, spriteSize, 1);
+      
+      // Posicionar el sprite en la superficie del planeta (no encima)
+      sprite.position.set(
+        planet.position.x + scaledSize*0.1, // Un poco desplazado para que se vea mejor
+        planet.position.y + scaledSize*0.3,
+        planet.position.z + scaledSize*0.96
+      );
+      
+      scene.add(sprite);
+
+      // Órbita visual
+      const orbitGeometry = new THREE.RingGeometry(scaledOrbitRadius - 0.3, scaledOrbitRadius + 0.05, 64);
+      const orbitMaterial = new THREE.MeshBasicMaterial({ 
+        color: project.color, 
+        side: THREE.DoubleSide, 
+        transparent: true, 
+        opacity: 0.2 
+      });
       const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
       orbit.rotation.x = Math.PI / 2;
       scene.add(orbit);
-
-      // Initial position
-      const initialAngle = (index * 2 * Math.PI) / projects.length;
-      planetGroup.position.x = Math.cos(initialAngle) * project.orbitRadius;
-      planetGroup.position.z = Math.sin(initialAngle) * project.orbitRadius;
-
-      planetsRef.current.push({
-        group: planetGroup,
-        project,
-        angle: initialAngle,
-        targetSpeed: project.orbitSpeed,
-        currentSpeed: project.orbitSpeed
-      });
-
-      scene.add(planetGroup);
     });
 
     // Mouse move
@@ -147,67 +209,46 @@ const Projects: React.FC = () => {
       setTooltipPosition({ x: e.clientX, y: e.clientY });
     };
 
-    // Click
+    // Click para zoom
     const handleClick = () => {
       raycasterRef.current.setFromCamera(mouseRef.current, camera);
-      const intersects = raycasterRef.current.intersectObjects(planetsRef.current.map(p => p.group.children[0]));
+      const intersects = raycasterRef.current.intersectObjects(planetMeshes);
       if (intersects.length > 0) {
-        const projectId = intersects[0].object.userData.projectId;
-        window.location.href = `/projects/${projectId}`;
+        const planet = intersects[0].object;
+        const projectId = planet.userData.projectId;
+        setZoomedProject(projectId);
+
+        gsap.to(camera.position, {
+          x: planet.position.x,
+          y: planet.position.y + 5,
+          z: planet.position.z + 10,
+          duration: 1.2,
+          onUpdate: () => camera.lookAt(planet.position)
+        });
       }
     };
 
     renderer.domElement.addEventListener('mousemove', handleMouseMove);
     renderer.domElement.addEventListener('click', handleClick);
 
-    // Animate
     const animate = () => {
       requestAnimationFrame(animate);
-
-      sun.rotation.y += 0.003;
-
-      // Detect hover
-      raycasterRef.current.setFromCamera(mouseRef.current, camera);
-      const intersects = raycasterRef.current.intersectObjects(planetsRef.current.map(p => p.group.children[0]));
-
-      planetsRef.current.forEach(planet => {
-        // Suavizar velocidad
-        const isHovered = intersects.some(i => i.object.userData.projectId === planet.project.id);
-        planet.targetSpeed = isHovered ? 0 : planet.project.orbitSpeed;
-        planet.currentSpeed += (planet.targetSpeed - planet.currentSpeed) * 0.05; // suavizado
-
-        // Actualizar posición
-        planet.angle += planet.currentSpeed;
-        planet.group.position.x = Math.cos(planet.angle) * planet.project.orbitRadius;
-        planet.group.position.z = Math.sin(planet.angle) * planet.project.orbitRadius;
-        planet.group.rotation.y += 0.005; // rotación lenta
-      });
-
-      // Cursor y tooltip
-      if (intersects.length > 0) {
-        renderer.domElement.style.cursor = 'pointer';
-        setHoveredProject(intersects[0].object.userData.projectId);
-      } else {
-        renderer.domElement.style.cursor = 'default';
-        setHoveredProject(null);
-      }
-
-      // Cámara orbitando
-      const time = Date.now() * 0.0002;
-      camera.position.x = Math.sin(time) * 60;
-      camera.position.z = Math.cos(time) * 60;
-      camera.lookAt(0, 0, 0);
-
+      
+      // Animar el sol
+      sun.rotation.y += 0.005;
+      
       renderer.render(scene, camera);
     };
-
     animate();
 
     // Resize
     const handleResize = () => {
-      camera.aspect = window.innerWidth / 600;
+      const { width, height } = updateDimensions();
+      camera.aspect = width / height;
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, 600);
+      renderer.setSize(width, height);
+      renderer.domElement.style.width = `${width}px`;
+      renderer.domElement.style.height = `${height}px`;
     };
     window.addEventListener('resize', handleResize);
 
@@ -215,33 +256,146 @@ const Projects: React.FC = () => {
       window.removeEventListener('resize', handleResize);
       renderer.domElement.removeEventListener('mousemove', handleMouseMove);
       renderer.domElement.removeEventListener('click', handleClick);
-      if (mountRef.current) mountRef.current.removeChild(renderer.domElement);
+      if (mountRef.current && renderer.domElement) {
+        mountRef.current.removeChild(renderer.domElement);
+      }
       renderer.dispose();
     };
   }, []);
 
   const hoveredProjectData = hoveredProject ? projects.find(p => p.id === hoveredProject) : null;
+  const zoomedProjectData = zoomedProject ? projects.find(p => p.id === zoomedProject) : null;
+
+  const handleZoomOut = () => {
+    setZoomedProject(null);
+
+    gsap.to(cameraRef.current!.position, {
+      x: 0,
+      y: 20,
+      z: 60,
+      duration: 1.2,
+      onUpdate: () => cameraRef.current!.lookAt(0, 0, 0)
+    });
+  };
+
+// Función para obtener el tamaño del modal según el dispositivo
+const getModalSize = () => {
+  if (dimensions.width < 768) {
+    return {
+      maxWidth: '80%',        // más angosto en mobile
+      padding: '0.75rem',     // menos padding
+      iconSize: 'text-3xl',   // más chico
+      titleSize: '1rem',
+      techSize: '0.75rem',
+      descSize: '0.7rem',
+      linkSize: '0.7rem',
+      buttonSize: '0.8rem'
+    };
+  } else if (dimensions.width < 1024) {
+    return {
+      maxWidth: '350px',
+      padding: '1.25rem',
+      iconSize: 'text-5xl',
+      titleSize: '1.25rem',
+      techSize: '0.9rem',
+      descSize: '0.85rem',
+      linkSize: '0.85rem',
+      buttonSize: '0.9rem'
+    };
+  } else {
+    return {
+      maxWidth: '400px',
+      padding: '2rem',
+      iconSize: 'text-6xl',
+      titleSize: '1.5rem',
+      techSize: '1rem',
+      descSize: '0.9rem',
+      linkSize: '0.9rem',
+      buttonSize: '1rem'
+    };
+  }
+};
+
+const modalSize = getModalSize();
 
   return (
-    <div className="relative w-full h-[600px]">
+    <div className="relative w-full" style={{ height: `${dimensions.height}px` }}>
       <div ref={mountRef} className="w-full h-full" />
-      {hoveredProjectData && (
-        <div 
+      
+      {/* Tooltip hover */}
+      {hoveredProjectData && !zoomedProject && (
+        <div
           className="fixed z-50 bg-space-dark/90 backdrop-blur-sm border border-neon-cyan rounded-lg p-4 pointer-events-none transform -translate-x-1/2 -translate-y-full"
-          style={{ left: tooltipPosition.x, top: tooltipPosition.y - 10, boxShadow: '0 0 20px rgba(0, 255, 255, 0.3)' }}
+          style={{ 
+            left: tooltipPosition.x, 
+            top: tooltipPosition.y - 10, 
+            boxShadow: '0 0 20px rgba(0, 255, 255, 0.3)',
+            maxWidth: dimensions.width < 768 ? '200px' : '300px'
+          }}
         >
-          <h3 className="text-neon-cyan font-bold text-lg mb-1">{hoveredProjectData.name}</h3>
+          <div className="flex items-center mb-2">
+            <span className="text-2xl mr-2">{hoveredProjectData.icon}</span>
+            <h3 className="text-neon-cyan font-bold text-lg">{hoveredProjectData.name}</h3>
+          </div>
           <p className="text-gray-300 text-sm mb-2">{hoveredProjectData.tech}</p>
           <p className="text-gray-400 text-xs max-w-xs">{hoveredProjectData.description}</p>
-          <div className="mt-2 text-neon-purple text-xs">Click para ver más →</div>
+          <div className="mt-2 text-neon-purple text-xs">Click para hacer zoom →</div>
         </div>
       )}
+
+      {/* Modal proyecto zoom con tamaño adaptativo */}
+      {zoomedProjectData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+          className="bg-space-dark/95 backdrop-blur-md border border-neon-cyan rounded-lg 
+                    text-center overflow-y-auto max-h-[70vh] w-[90%] sm:w-auto"
+          style={{ 
+            boxShadow: '0 0 40px rgba(0, 255, 255, 0.5)',
+            padding: modalSize.padding,
+            maxWidth: modalSize.maxWidth // se respeta solo en pantallas sm+
+          }}
+          >
+            <div className={`mb-3 ${modalSize.iconSize}`}>{zoomedProjectData.icon}</div>
+            <h2 className="text-neon-cyan font-bold mb-2" style={{ fontSize: modalSize.titleSize }}>
+              {zoomedProjectData.name}
+            </h2>
+            <p className="text-gray-300 mb-2" style={{ fontSize: modalSize.techSize }}>
+              {zoomedProjectData.tech}
+            </p>
+            <p className="text-gray-400 mb-3 leading-snug" style={{ fontSize: modalSize.descSize }}>
+              {zoomedProjectData.description}
+            </p>
+            <div 
+              className="text-neon-purple cursor-pointer mb-3" 
+              style={{ fontSize: modalSize.linkSize }}
+              onClick={() => window.location.href = `/projects/${zoomedProjectData.id}`}
+            >
+              Click para ver el proyecto completo →
+            </div>
+            <button
+              className="px-3 py-2 bg-neon-cyan text-space-dark rounded-lg hover:bg-neon-cyan-dark w-full"
+              style={{ fontSize: modalSize.buttonSize }}
+              onClick={handleZoomOut}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="absolute bottom-4 left-4 text-gray-400 text-sm">
-        <p>🖱️ Pasa el mouse sobre los planetas</p>
-        <p>🖱️ Click en un planeta para ver el proyecto</p>
+        <p className={dimensions.width < 768 ? 'text-xs' : ''}>🖱️ Pasa el mouse sobre los planetas</p>
+        <p className={dimensions.width < 768 ? 'text-xs' : ''}>🖱️ Click para hacer zoom y ver el proyecto</p>
       </div>
+
+      {/* Indicador de touch para móviles */}
+      {dimensions.width < 768 && (
+        <div className="mt-3 text-center bg-neon-cyan/20 text-neon-cyan px-3 py-2 rounded-lg text-xs">
+          👆 Toca los planetas
+        </div>
+      )}
     </div>
-  );
+  )
 };
 
 export default Projects;
